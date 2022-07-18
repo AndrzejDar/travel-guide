@@ -10,38 +10,84 @@ import { getPlacesData } from "./api";
 
 const App = () => {
   const [places, setPlaces] = useState([]);
+  const [filteredPlaces, setFilteredPlaces] = useState([]);
+
+  const [autocoplete, setAutocomplete] = useState(null);
+  const [childClicked, setChildClicked] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [coordinates, setCoordinates] = useState({});
   const [bounds, setBounds] = useState(null);
-
-useEffect(()=>{
-navigator.geolocation.getCurrentPosition(({coords: {latitude, longitude}})=>{
-    // console.log(data);
-    setCoordinates({lat: latitude, lng:longitude});
-})
-},[]);
+  const [type, setType] = useState("restaurants");
+  const [rating, setRating] = useState("");
 
   useEffect(() => {
-    if (bounds){
-    getPlacesData(bounds.sw, bounds.ne).then((data) => {
-      console.log(data);
-      setPlaces(data);
-    })}
-  }, [coordinates,bounds]);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords: { latitude, longitude } }) => {
+        setCoordinates({ lat: latitude, lng: longitude });
+      }
+    );
+  }, []);
 
+  useEffect(() => {
+    setFilteredPlaces(places.filter((place) => place.rating > rating));
+  }, [rating]);
+
+  
+  const onLoad = (autoC) => {
+    setAutocomplete(autoC);
+  };
+  
+  const onPlaceChanged = () => {
+    const lat = autocoplete.getPlace().geometry.location.lat();
+    const lng = autocoplete.getPlace().geometry.location.lng();
+    setCoordinates({ lat, lng });
+  };
+
+  useEffect(() => {
+    if (bounds && bounds.sw && bounds.ne) {
+      setIsLoading(true);
+      getPlacesData(bounds.sw, bounds.ne, type).then((data) => {
+        setPlaces(data?.filter((place) => place.name && place.num_reviews > 0));
+        setFilteredPlaces([]);
+        setIsLoading(false);
+      });
+    }
+  }, [bounds, type]);
+  
   return (
     <>
       <CssBaseline />
 
-      <Header />
+      <Header onLoad={onLoad} onPlaceChanged={onPlaceChanged} />
       <Grid container spacing={3} style={{ width: "100%" }}>
         <Grid item xs={12} md={4}>
-          <List places={places} />
+          <List
+            places={rating > 1 ? filteredPlaces : places}
+            childClicked={childClicked}
+            isLoading={isLoading}
+            type={type}
+            setType={setType}
+            rating={rating}
+            setRating={setRating}
+          />
         </Grid>
-        <Grid item xs={12} md={8}>
-          <Map 
-          setCoordinates={setCoordinates}
-          setBounds={setBounds} 
-          coordinates={coordinates}
+        <Grid
+          item
+          xs={12}
+          md={8}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Map
+            setCoordinates={setCoordinates}
+            setBounds={setBounds}
+            coordinates={coordinates}
+            places={rating > 1 ? filteredPlaces : places}
+            setChildClicked={setChildClicked}
           />
         </Grid>
       </Grid>

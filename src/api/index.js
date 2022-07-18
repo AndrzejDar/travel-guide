@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const URL= 'https://travel-advisor.p.rapidapi.com/restaurants/list-in-boundary';
+const URL= '';
 
-export const getPlacesData = async (sw,ne) => {
+export const getPlacesData = async (sw, ne, type) => {
 
     const options = {
         params: {
@@ -16,17 +16,19 @@ export const getPlacesData = async (sw,ne) => {
           lang: 'en_US'
         },
         headers: {
-          'X-RapidAPI-Key': '1d948481c8msh0f1f9dbf326e150p1a4a77jsn21b071b522e7',
+          'X-RapidAPI-Key': process.env.REACT_APP_RAPIDAPI_TRAVEL_API_KEY,
           'X-RapidAPI-Host': 'travel-advisor.p.rapidapi.com'
         }
       };
 
 
     try{
-        const {data: {data}} = await axios.get(URL,options);
+        const {data: {data}} = await axios.get(`https://travel-advisor.p.rapidapi.com/${type}/list-in-boundary`,options);
         return data;
     } catch(error){
-        console.log(error);
+        if(error.response.status === 429){
+           window.alert('API request limit reached')
+          }
 
     }
 }
